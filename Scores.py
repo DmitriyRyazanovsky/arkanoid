@@ -12,9 +12,9 @@ class Scores:
     # рисование надписи
     def draw(self, qp: QPainter):
         # цвет цифр
-        penCollor = QColor('blue')
+        pen_сolor = QColor('blue')
         # задаем цвет цифр
-        qp.setPen(penCollor)
+        qp.setPen(pen_сolor)
         # задаем шрифт
         qp.setFont(QFont('Arial', 16))
         # пишем количество очков с выравниванием по правому краю

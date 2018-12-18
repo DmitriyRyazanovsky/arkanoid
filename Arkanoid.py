@@ -1,6 +1,6 @@
 import sys
-from PyQt5 import QtCore
 
+from PyQt5 import QtCore
 from PyQt5.QtWidgets import QApplication, QWidget
 from PyQt5.QtGui import QPainter
 
@@ -17,16 +17,18 @@ STATE_START = 1
 STATE_PAUSE = 2
 # состояние - игра
 STATE_GAME = 3
-# состояние - выигрыш
-STATE_WIN = 4
+# состояние - выигрыш уровня
+STATE_WIN_LEVEL = 4
+# состояние - выигрыш игры
+STATE_WIN_GAME = 5
 # состояние - проигрыш
-STATE_LOSE = 5
+STATE_LOSE = 6
 
-# код класиши Влево
+# код клавиши Влево
 KEY_LEFT = 16777234
-# код класиши Вправо
+# код клавиши Вправо
 KEY_RIGHT = 16777236
-# код класиши Пробел
+# код клавиши Пробел
 KEY_SPACE = 32
 
 
@@ -39,7 +41,9 @@ class Arkanoid(QWidget):
 
     # конструктор
     def __init__(self):
+        # вызов конструктора базового класса
         super().__init__()
+        # инициализация поля
         self.initUI()
 
     # подготовка поля
@@ -58,7 +62,7 @@ class Arkanoid(QWidget):
         # создаём шарик
         self.ball = Ball(Arkanoid.W / 2, Racket.Y - Ball.R, 60)
         # создаём надпись
-        self.label = Label(150, Arkanoid.H / 2, Arkanoid.W - 300, 60)
+        self.label = Label(150, Arkanoid.H // 2, Arkanoid.W - 300, 60)
         # создаем очки
         self.scores = Scores(0, 9, Arkanoid.W, 30)
 
@@ -67,23 +71,22 @@ class Arkanoid(QWidget):
         # заканчиваем время
         self.timer.timeout.connect(self.tick)
         # задаём начало счётчика
-        self.timer.start(1)
+        self.timer.start(2)
 
         # включаем отслеживание мыши
         self.setMouseTracking(1)
-        # переходим в состояние запуска
-        self.start()
 
-    # запуск арканоида
-    def start(self):
+        # переходим в состояние запуска
+        self.restart()
+
+    # запуск или перезапуск арканоида
+    def restart(self):
         # заполняем кубики
         self.cubes.initCubes()
-        # сбрасываем очки
-        self.scores = 0
         # сбрасываем позицию и угол шарика
         self.ball.cx = Arkanoid.W / 2
         self.ball.cy = Racket.Y - Ball.R
-        self.ball.alfa = 60
+        self.ball.angle = 60
         # переходим в состояние запуска
         self.state = STATE_START
 
@@ -109,18 +112,20 @@ class Arkanoid(QWidget):
             qp.end()
         except Exception as e:
             # печать ошибок
-            print(e)
+            print(str(e))
 
     # взависимости от текущего состояния
     # выводим на экран ту или иную запись
     def drawState(self, qp: QPainter):
-        if (self.state == STATE_START):
+        if self.state == STATE_START:
             self.label.draw(qp, "Добро пожаловать в Арканоид!")
-        elif (self.state == STATE_PAUSE):
+        elif self.state == STATE_PAUSE:
             self.label.draw(qp, "Пауза")
-        elif (self.state == STATE_WIN):
-            self.label.draw(qp, "Вы выиграли! Поздравляю!")
-        elif (self.state == STATE_LOSE):
+        elif self.state == STATE_WIN_LEVEL:
+            self.label.draw(qp, "Вы перешли на уровень " + str(self.cubes.level) + ". Поздравляю!")
+        elif self.state == STATE_WIN_GAME:
+            self.label.draw(qp, "Вы прошли игру! Поздравляю!")
+        elif self.state == STATE_LOSE:
             self.label.draw(qp, "Вы проиграли")
 
     # обработка клавиатуры
@@ -143,7 +148,17 @@ class Arkanoid(QWidget):
         else:
             # если нажат Пробел
             if event.key() == KEY_SPACE:
-                #  переходим в состояние игры
+                # если выиграли игру или проиграли
+                if self.state == STATE_WIN_GAME or self.state == STATE_LOSE:
+                    # сбрасываем уровень
+                    self.cubes.level = 1
+                    # сбрасываем очки
+                    self.scores.count = 0
+                # если не на паузе
+                if self.state != STATE_PAUSE:
+                    # то перезапуск
+                    self.restart()
+                # переходим в состояние игры
                 self.state = STATE_GAME
                 # обновляем окно
                 self.update()
@@ -182,33 +197,46 @@ class Arkanoid(QWidget):
             # перемещение шарика
             self.ball.move()
 
+            # обработка касания шариком ракетки
+            if self.ball.touched(self.racket.x, Racket.Y, self.racket.x + Racket.W, Racket.Y):
+                # в зависимости от того, куда шарик попал по ракетке
+                # устанавливаем разный угол
+                # если в левый край - то 160 градусов
+                # ecли в правый - то 30 градусов
+                # если по центру - то 90 градусов
+                dx = self.racket.x + Racket.W - self.ball.cx
+                self.ball.angle = dx / Racket.W * (160 - 30) + 30
+
             # обработка касания шариком краев экрана
             self.ball.touchedRect(0, 0, Arkanoid.W, Arkanoid.H)
-
-            # обработка касания шариком ракетки
-            self.ball.touchedRect(self.racket.x, Racket.Y, self.racket.x + Racket.W, Racket.Y + Racket.H)
 
             # обработка касания шариком кубиков
             for cube in self.cubes:
                 # если мяч коснулся куба
                 if self.ball.touchedRect(cube.x, cube.y, cube.x + Cube.W, cube.y + Cube.H):
                     # изменение номера цвета куба
-                    cube.collorNumber += 1
+                    cube.collor_number += 1
                     self.scores.count += 1
                     # если цвет куба больше количества цветов
-                    if cube.collorNumber >= len(Cube.RAINBOW):
+                    if cube.collor_number >= len(Cube.RAINBOW):
                         # убираем кубик
                         self.cubes.remove(cube)
 
-            # если мяч ниже поля
-            if self.ball.cy > Arkanoid.H:
+            # если мяч ниже рокетки
+            if self.ball.cy > Racket.Y + Racket.H + 20:
                 # переходим в состояние пройгрыша
                 self.state = STATE_LOSE
 
             # если кубики закончились
             if len(self.cubes) == 0:
                 # переходим в состояние выйгрыша
-                self.state = STATE_WIN
+                self.state = STATE_WIN_LEVEL
+                # поднимаем уровень
+                self.cubes.level += 1
+                # если прошли все цвета радуги
+                if self.cubes.level == len(Cube.RAINBOW):
+                    # то считаем, что прошли игру
+                    self.state = STATE_WIN_GAME
 
             # обновляем экран
             self.update()

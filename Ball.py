@@ -9,24 +9,28 @@ class Ball:
 
     # # конструктор, принимает координату центра шарика (сx;сy)
     # и угол на который летит шарик
-    def __init__(self, cx: float, cy: float, alfa: float):
+    def __init__(self, cx: float, cy: float, angle: float):
         self.cx = cx
         self.cy = cy
-        self.alfa = alfa
+        self.angle = angle
 
     # рисование шарика
     def draw(self, qp: QPainter):
+        # цвет рамки
+        pen_color = QColor('black')
+        # установка цвета рамки
+        qp.setPen(pen_color)
         # цвет кисти шарика
-        brushCollor = QColor('white')
+        brush_color = QColor('white')
         # задаем цвет кисти
-        qp.setBrush(brushCollor)
+        qp.setBrush(brush_color)
         # рисуем круг
         qp.drawEllipse(self.cx - Ball.R, self.cy - Ball.R, Ball.R * 2, Ball.R * 2)
 
     # перемещение шарика
     def move(self):
         # переводим градусы в радианы
-        rad = self.alfa * math.pi / 180
+        rad = self.angle * math.pi / 180
         # синус - противолежащий катет
         self.cy -= math.sin(rad)
         # косинус - прилежащий катет
@@ -37,13 +41,13 @@ class Ball:
         # если коснулся верхней или нижней грани
         if self.touched(x1, y1, x2, y1) or self.touched(x1, y2, x2, y2):
             # то угол отражаем горизонтально
-            self.alfa = - self.alfa
+            self.angle = - self.angle
             return True
 
         # если коснулся левой или правой грани
         if self.touched(x1, y1, x1, y2) or self.touched(x2, y1, x2, y2):
             # то угол отражаем вернтикально
-            self.alfa = 180 - self.alfa
+            self.angle = 180 - self.angle
             return True
 
         # если граней не касаемся,
