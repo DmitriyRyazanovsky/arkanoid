@@ -1,4 +1,5 @@
 import sys
+import random
 
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QApplication, QWidget
@@ -78,7 +79,7 @@ class Arkanoid(QWidget):
 
         # включаем отслеживание мыши
         self.setMouseTracking(1)
-
+        
         # переходим в состояние запуска
         self.restart()
 
@@ -89,7 +90,7 @@ class Arkanoid(QWidget):
         # сбрасываем позицию и угол шарика
         self.ball.cx = Arkanoid.W / 2
         self.ball.cy = Racket.Y - Ball.R
-        self.ball.angle = 60
+        self.ball.angle = random.randint(60, 120)
         # переходим в состояние запуска
         self.state = STATE_START
 
@@ -239,7 +240,7 @@ class Arkanoid(QWidget):
                 # поднимаем уровень
                 self.cubes.level += 1
                 # если прошли все цвета радуги
-                if self.cubes.level == len(Cube.RAINBOW):
+                if self.cubes.level > len(Cube.RAINBOW):
                     # то считаем, что прошли игру
                     self.state = STATE_WIN_GAME
 
