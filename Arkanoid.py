@@ -2,7 +2,7 @@ import sys
 
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QApplication, QWidget
-from PyQt5.QtGui import QPainter
+from PyQt5.QtGui import QPainter, QImage
 
 from Cubes import Cubes
 from Cube import Cube
@@ -55,6 +55,9 @@ class Arkanoid(QWidget):
         # задаём имя программы
         self.setWindowTitle('Арканоид')
 
+        # загружаем фоновое изображение
+        self.background = QImage('background.jpg')
+
         # создаём кубики
         self.cubes = Cubes()
         # созаём ракетку
@@ -98,6 +101,8 @@ class Arkanoid(QWidget):
             qp = QPainter()
             # начало рисования
             qp.begin(self)
+            # рисуем фоновую картинку
+            qp.drawImage(0, 0, self.background)
             # рисуем кубики
             self.cubes.draw(qp)
             # рисуем ракетку
